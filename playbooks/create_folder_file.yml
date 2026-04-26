@@ -1,21 +1,18 @@
 ---
 - name: creating a folder and a file into this folder
   hosts: all
-  become: true
+  become: false        # <-- IMPORTANTE: Cambiado a false para que no pida sudo
   gather_facts: no
 
   tasks: 
-  - name: create a folder
-    file: 
-      path: /home/jenkins/playbooks/test-directory-from-jenkins
-      state: directory
-      mode: 0755
-      owner: jenkins
-      group: jenkins
-  - name: create a file into the recently created folder
-    file: 
-      path: /home/jenkins/playbooks/test-directory-from-jenkins/testfile-from-jenkins.txt
-      state: touch
-      mode: 0755
-      owner: jenkins
-      group: jenkins
+    - name: create a folder
+      file: 
+        path: /home/usuarioazure/practica_mila
+        state: directory
+        mode: '0755'   # Sin dueño ni grupo, para que sea de usuarioazure
+
+    - name: create a file into the recently created folder
+      file: 
+        path: /home/usuarioazure/practica_mila/testfile-from-jenkins.txt
+        state: touch
+        mode: '0755'
