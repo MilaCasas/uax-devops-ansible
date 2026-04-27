@@ -1,0 +1,53 @@
+---
+- name: Provisión de Tomcat y Despliegue de Aplicación
+  hosts: tomcat
+  become: true
+  gather_facts: yes
+
+  tasks:
+    - name: Actualizar repositorios (apt cache)
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Instalar Java (Requerido para Tomcat)
+      apt:
+        name: openjdk-17-jdk
+        state: present
+
+    - name: Crear directorio para Tomcat
+      file:
+        path: /opt/tomcat
+        state: directory
+        mode: '0755'
+
+    - name: Descargar e instalar Tomcat 10
+      unarchive:
+        src: https://archive.apache.org/dist/tomcat/tomcat-10/v10.1.5/bin/apache-tomcat-10.1.5.tar.gz
+        dest: /opt/tomcat
+        remote_src: yes
+        extra_opts: [--strip-components=1]
+        creates: /opt/tomcat/bin/startup.sh
+
+    - name: Asegurar permisos de ejecución en scripts de Tomcat
+      file:
+        path: "/opt/tomcat/bin/{{ item }}"
+        mode: '0755'
+      with_items:
+        - startup.sh
+        - shutdown.sh
+        - catalina.sh
+
+    - name: Descargar el artefacto (.war) desde Artifactory
+      get_url:
+        url: "{{ war_from_artifactory_url }}"
+        dest: "/opt/tomcat/webapps/{{ app_name }}.war"
+        url_username: "{{ artifactory_user }}"
+        url_password: "{{ artifactory_password }}"
+        mode: '0755'
+      when: deploy_artifact | default(false)
+
+    - name: Iniciar Tomcat
+      shell: "nohup /opt/tomcat/bin/startup.sh &"
+      async: 10
+      poll: 0
